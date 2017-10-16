@@ -85,12 +85,37 @@ namespace Sitecore.Support.Shell.Framework.Commands.System
             // get start item of current site
             if (siteContext == null)
             {
+                //compare site name in case there are any wild cards in it
+
                 foreach (SiteInfo current in SiteContextFactory.Sites)
                 {
-                    if (current.HostName.ToLowerInvariant().Equals(WebUtil.GetRequestUri().Host.ToLowerInvariant()))
+                    string host = WebUtil.GetRequestUri().Host.ToLowerInvariant();
+                    string currentHost = current.HostName.ToLowerInvariant();
+                    if (!string.IsNullOrEmpty(currentHost))
                     {
-                        siteContext = new SiteContext(current);
-                        break;
+                        var hostNames = currentHost.Split('|');
+                        foreach (var hostName in hostNames)
+                        {
+                            var splitIt = hostName.Split('*');
+                            if (splitIt.Length > 1)
+                            {
+                                string startWith = splitIt[0];
+                                string endWith = splitIt[splitIt.Length - 1];
+
+                                if (host.StartsWith(startWith, StringComparison.OrdinalIgnoreCase) &&
+                                    host.EndsWith(endWith, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    siteContext = new SiteContext(current);
+                                    break;
+                                }
+                            }
+                            else
+                            {
+                                siteContext = new SiteContext(current);
+                                break;
+
+                            }
+                        }
                     }
                 }
             }
